@@ -1,0 +1,34 @@
+project:
+  type: website
+  # GitHub Pages: Settings → Pages → Branch main, folder /docs
+  output-dir: docs
+  post-render:
+    - "cp .nojekyll docs/.nojekyll"
+
+website:
+  title: "Quarto Hello"
+  description: "A clean Quarto starter site"
+  site-url: https://yangpuhan.github.io/Fintech533_Site/
+  navbar:
+    background: primary
+    left:
+      - text: Home
+        href: index.qmd
+      - text: About
+        href: about.qmd
+    right:
+      - icon: github
+        href: https://quarto.org
+        text: Quarto
+  page-footer: "Built with [Quarto](https://quarto.org) · Course demo"
+
+format:
+  html:
+    theme:
+      light: [cosmo, styles.scss]
+    toc: true
+    toc-depth: 2
+    code-copy: true
+    anchor-sections: true
+    smooth-scroll: true
+    lang: en

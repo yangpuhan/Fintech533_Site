@@ -1,0 +1,56 @@
+---
+title: "Hello"
+subtitle: "Your Quarto site — ready to extend with notes, code, and reports"
+---
+
+::: {.hero-lead}
+This is a small demo site with navigation, a consistent theme, and room to grow. Edit `index.qmd` and `_quarto.yml` to match your course or project.
+:::
+
+## What you get
+
+::: {.row .g-4 .my-4}
+
+::: {.col-md-4}
+::: {.feature-card}
+### Projects
+
+Render the whole folder with one command. Shared YAML keeps titles, theme, and output in sync.
+:::
+:::
+
+::: {.col-md-4}
+::: {.feature-card}
+### Authoring
+
+Write in Markdown (`.qmd`) or Jupyter (`.ipynb`). Quarto turns them into HTML, PDF, and more.
+:::
+:::
+
+::: {.col-md-4}
+::: {.feature-card}
+### Polished HTML
+
+Bootstrap-based layout, table of contents, and optional search — suitable for assignments and portfolios.
+:::
+:::
+
+:::
+
+## Quick start
+
+::: {.section-muted}
+From the `quarto-hello` folder, render or preview:
+
+```bash
+quarto render
+quarto preview
+```
+
+Then open the URL shown in the terminal (often `http://localhost:xxxx`).
+:::
+
+::: {.callout-tip}
+## Tip
+Use **About** in the navbar for a second page. Add more `.qmd` files and list them under `website.navbar.left` in `_quarto.yml`.
+:::

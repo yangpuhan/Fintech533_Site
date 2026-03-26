@@ -1,0 +1,44 @@
+[
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "This page is a normal Quarto document linked from the navigation bar."
+  },
+  {
+    "objectID": "about.html#structure",
+    "href": "about.html#structure",
+    "title": "About",
+    "section": "Structure",
+    "text": "Structure\n\n\n\nFile\nRole\n\n\n\n\n_quarto.yml\nSite title, navbar, theme, and shared HTML options\n\n\nindex.qmd\nHome page\n\n\nabout.qmd\nThis page\n\n\nstyles.scss\nExtra colors and layout tweaks"
+  },
+  {
+    "objectID": "about.html#next-steps",
+    "href": "about.html#next-steps",
+    "title": "About",
+    "section": "Next steps",
+    "text": "Next steps\n\nAdd figures, citations, or code chunks to any .qmd file.\nChange theme under format.html in _quarto.yml (e.g. minty, flatly, sandstone).\nTurn on search by adding search: true under website in _quarto.yml if your Quarto version supports it."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Hello",
+    "section": "",
+    "text": "This is a small demo site with navigation, a consistent theme, and room to grow. Edit index.qmd and _quarto.yml to match your course or project."
+  },
+  {
+    "objectID": "index.html#what-you-get",
+    "href": "index.html#what-you-get",
+    "title": "Hello",
+    "section": "What you get",
+    "text": "What you get\n\n\n\nProjects\nRender the whole folder with one command. Shared YAML keeps titles, theme, and output in sync.\n\n\n\n\nAuthoring\nWrite in Markdown (.qmd) or Jupyter (.ipynb). Quarto turns them into HTML, PDF, and more.\n\n\n\n\nPolished HTML\nBootstrap-based layout, table of contents, and optional search — suitable for assignments and portfolios."
+  },
+  {
+    "objectID": "index.html#quick-start",
+    "href": "index.html#quick-start",
+    "title": "Hello",
+    "section": "Quick start",
+    "text": "Quick start\n\nFrom the quarto-hello folder, render or preview:\nquarto render\nquarto preview\nThen open the URL shown in the terminal (often http://localhost:xxxx).\n\n\n\n\n\n\n\nTipTip\n\n\n\nUse About in the navbar for a second page. Add more .qmd files and list them under website.navbar.left in _quarto.yml."
+  }
+]

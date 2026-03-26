@@ -1,0 +1,81 @@
+/*-- scss:defaults --*/
+$primary: #1e5f74;
+$link-color: #0d9488;
+$font-family-sans-serif: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+/*-- scss:rules --*/
+
+body {
+  letter-spacing: 0.01em;
+}
+
+/* Full-width hero strip for website article pages */
+#quarto-document-content > header.quarto-title-block {
+  background: linear-gradient(135deg, #0f172a 0%, #1e5f74 45%, #0d9488 100%);
+  color: #f8fafc;
+  padding: 2.25rem 1.75rem 2rem;
+  margin: -1rem -1rem 1.75rem -1rem;
+  border-radius: 0 0 0.65rem 0.65rem;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12);
+}
+
+#quarto-document-content > header.quarto-title-block .title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #f8fafc;
+}
+
+#quarto-document-content > header.quarto-title-block .subtitle {
+  color: rgba(248, 250, 252, 0.9);
+}
+
+.hero-lead {
+  font-size: 1.08rem;
+  line-height: 1.65;
+  max-width: 44rem;
+  margin: 0 0 1.75rem;
+  color: #334155;
+}
+
+.feature-card {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 1.5rem 1.35rem;
+  height: 100%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.feature-card:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+  transform: translateY(-2px);
+}
+
+.feature-card h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0;
+  color: $primary;
+}
+
+.feature-card p {
+  margin-bottom: 0;
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.section-muted {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 0.75rem;
+  padding: 2rem 1.5rem;
+  margin: 2rem 0;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+#quarto-content main h2 {
+  margin-top: 2rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid rgba(13, 148, 136, 0.25);
+}

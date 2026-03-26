@@ -1,0 +1,21 @@
+---
+title: "About"
+subtitle: "How this site is put together"
+---
+
+This page is a normal Quarto document linked from the navigation bar.
+
+## Structure
+
+| File | Role |
+|------|------|
+| `_quarto.yml` | Site title, navbar, theme, and shared HTML options |
+| `index.qmd` | Home page |
+| `about.qmd` | This page |
+| `styles.scss` | Extra colors and layout tweaks |
+
+## Next steps
+
+- Add figures, citations, or code chunks to any `.qmd` file.
+- Change `theme` under `format.html` in `_quarto.yml` (e.g. `minty`, `flatly`, `sandstone`).
+- Turn on **search** by adding `search: true` under `website` in `_quarto.yml` if your Quarto version supports it.
