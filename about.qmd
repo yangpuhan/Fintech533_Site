@@ -10,7 +10,7 @@ This page is a normal Quarto document linked from the navigation bar.
 | File | Role |
 |------|------|
 | `_quarto.yml` | Site title, navbar, theme, and shared HTML options |
-| `index.qmd` | Home page |
+| `index.qmd` | Home (Yang Puhan) |
 | `about.qmd` | This page |
 | `styles.scss` | Extra colors and layout tweaks |
 

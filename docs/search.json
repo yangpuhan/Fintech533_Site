@@ -11,7 +11,7 @@
     "href": "about.html#structure",
     "title": "About",
     "section": "Structure",
-    "text": "Structure\n\n\n\nFile\nRole\n\n\n\n\n_quarto.yml\nSite title, navbar, theme, and shared HTML options\n\n\nindex.qmd\nHome page\n\n\nabout.qmd\nThis page\n\n\nstyles.scss\nExtra colors and layout tweaks"
+    "text": "Structure\n\n\n\nFile\nRole\n\n\n\n\n_quarto.yml\nSite title, navbar, theme, and shared HTML options\n\n\nindex.qmd\nHome (Yang Puhan)\n\n\nabout.qmd\nThis page\n\n\nstyles.scss\nExtra colors and layout tweaks"
   },
   {
     "objectID": "about.html#next-steps",
@@ -23,22 +23,22 @@
   {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "Hello",
+    "title": "Yang Puhan",
     "section": "",
-    "text": "This is a small demo site with navigation, a consistent theme, and room to grow. Edit index.qmd and _quarto.yml to match your course or project."
+    "text": "Hi — I’m Yang Puhan. This is my Quarto site for Fintech 533: assignments, write-ups, and links to my GitHub repo below."
   },
   {
     "objectID": "index.html#what-you-get",
     "href": "index.html#what-you-get",
-    "title": "Hello",
+    "title": "Yang Puhan",
     "section": "What you get",
-    "text": "What you get\n\n\n\nProjects\nRender the whole folder with one command. Shared YAML keeps titles, theme, and output in sync.\n\n\n\n\nAuthoring\nWrite in Markdown (.qmd) or Jupyter (.ipynb). Quarto turns them into HTML, PDF, and more.\n\n\n\n\nPolished HTML\nBootstrap-based layout, table of contents, and optional search — suitable for assignments and portfolios."
+    "text": "What you get\n\n\n\nProjects\nRender the whole folder with one command. Shared YAML keeps titles, theme, and output in sync.\n\n\n\n\nAuthoring\nWrite in Markdown (.qmd) or Jupyter (.ipynb). Quarto turns them into HTML, PDF, and more.\n\n\n\n\nPolished HTML\nBootstrap-based layout, table of contents, and search — suitable for assignments and portfolios."
   },
   {
     "objectID": "index.html#quick-start",
     "href": "index.html#quick-start",
-    "title": "Hello",
+    "title": "Yang Puhan",
     "section": "Quick start",
-    "text": "Quick start\n\nFrom the quarto-hello folder, render or preview:\nquarto render\nquarto preview\nThen open the URL shown in the terminal (often http://localhost:xxxx).\n\n\n\n\n\n\n\nTipTip\n\n\n\nUse About in the navbar for a second page. Add more .qmd files and list them under website.navbar.left in _quarto.yml."
+    "text": "Quick start\n\nFrom this project folder, update the site and publish:\nquarto render\ngit add .\ngit commit -m \"Update site\"\ngit push\nGitHub Pages serves the docs/ folder on branch main.\n\n\n\n\n\n\n\nTipTip\n\n\n\nReplace the banner in images/banner.svg with your own photo: save it as e.g. images/photo.jpg and update the image line above to ![](images/photo.jpg)."
   }
 ]

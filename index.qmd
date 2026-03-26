@@ -1,11 +1,13 @@
 ---
-title: "Hello"
-subtitle: "Your Quarto site — ready to extend with notes, code, and reports"
+title: "Yang Puhan"
+subtitle: "Fintech 533 — course site and notes"
 ---
 
 ::: {.hero-lead}
-This is a small demo site with navigation, a consistent theme, and room to grow. Edit `index.qmd` and `_quarto.yml` to match your course or project.
+Hi — I’m **Yang Puhan**. This is my Quarto site for **Fintech 533**: assignments, write-ups, and links to my GitHub repo below.
 :::
+
+![Site banner with initials YP](images/banner.svg){fig-alt="Banner graphic with initials Y P and Fintech 533" fig-align="center" width="560"}
 
 ## What you get
 
@@ -31,7 +33,7 @@ Write in Markdown (`.qmd`) or Jupyter (`.ipynb`). Quarto turns them into HTML, P
 ::: {.feature-card}
 ### Polished HTML
 
-Bootstrap-based layout, table of contents, and optional search — suitable for assignments and portfolios.
+Bootstrap-based layout, table of contents, and search — suitable for assignments and portfolios.
 :::
 :::
 
@@ -40,17 +42,19 @@ Bootstrap-based layout, table of contents, and optional search — suitable for 
 ## Quick start
 
 ::: {.section-muted}
-From the `quarto-hello` folder, render or preview:
+From this project folder, update the site and publish:
 
 ```bash
 quarto render
-quarto preview
+git add .
+git commit -m "Update site"
+git push
 ```
 
-Then open the URL shown in the terminal (often `http://localhost:xxxx`).
+GitHub Pages serves the **`docs/`** folder on branch **`main`**.
 :::
 
 ::: {.callout-tip}
 ## Tip
-Use **About** in the navbar for a second page. Add more `.qmd` files and list them under `website.navbar.left` in `_quarto.yml`.
+Replace the banner in `images/banner.svg` with your own photo: save it as e.g. `images/photo.jpg` and update the image line above to `![](images/photo.jpg)`.
 :::

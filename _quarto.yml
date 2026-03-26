@@ -6,8 +6,8 @@ project:
     - "cp .nojekyll docs/.nojekyll"
 
 website:
-  title: "Quarto Hello"
-  description: "A clean Quarto starter site"
+  title: "Yang Puhan · Fintech 533"
+  description: "Course site — Yang Puhan"
   site-url: https://yangpuhan.github.io/Fintech533_Site/
   navbar:
     background: primary
@@ -18,9 +18,9 @@ website:
         href: about.qmd
     right:
       - icon: github
-        href: https://quarto.org
-        text: Quarto
-  page-footer: "Built with [Quarto](https://quarto.org) · Course demo"
+        href: https://github.com/yangpuhan/Fintech533_Site
+        text: Repo
+  page-footer: "Yang Puhan · Built with [Quarto](https://quarto.org)"
 
 format:
   html:
