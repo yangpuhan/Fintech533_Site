@@ -2,25 +2,28 @@ project:
   type: website
   # GitHub Pages: Settings → Pages → Branch main, folder /docs
   output-dir: docs
+  render:
+    - index.qmd
+    - breakouts.qmd
   post-render:
     - "cp .nojekyll docs/.nojekyll"
 
 website:
-  title: "Yang Puhan · Fintech 533"
-  description: "Course site — Yang Puhan"
+  title: "Puhan Yang · Fintech 533"
+  description: "Course site — Puhan Yang"
   site-url: https://yangpuhan.github.io/Fintech533_Site/
   navbar:
     background: primary
     left:
       - text: Home
         href: index.qmd
-      - text: About
-        href: about.qmd
+      - text: Breakouts
+        href: breakouts.qmd
     right:
       - icon: github
         href: https://github.com/yangpuhan/Fintech533_Site
         text: Repo
-  page-footer: "Yang Puhan · Built with [Quarto](https://quarto.org)"
+  page-footer: "Puhan Yang · Built with [Quarto](https://quarto.org)"
 
 format:
   html:

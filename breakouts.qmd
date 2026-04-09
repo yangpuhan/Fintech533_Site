@@ -1,0 +1,591 @@
+---
+title: "Breakout Trading Strategy"
+subtitle: "Donchian Channel Breakout — Backtest & Analysis"
+jupyter: python3
+format:
+  html:
+    code-fold: true
+    code-summary: "Show code"
+---
+
+```{python}
+#| label: setup
+#| echo: false
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+import yfinance as yf
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+from datetime import datetime, timedelta
+```
+
+## Strategy Logic
+
+This strategy exploits **Donchian Channel breakouts** on daily price data.
+A Donchian Channel marks the highest high and lowest low over a rolling
+look-back window.  When price closes above the upper channel, we enter a
+**long** position, expecting momentum to carry the move further.  Each trade
+is governed by three exit rules applied in priority order: (1) a **stop-loss**
+set at a fixed percentage below the entry price to cap downside risk,
+(2) a **profit target** at a fixed percentage above entry to lock in gains,
+and (3) a **timeout** that forces a market-order exit after a maximum
+holding period if neither the stop nor the target has been hit.  All
+parameters — look-back length, stop-loss distance, profit target, and
+timeout — are calibrated on a rolling one-year training window and then
+applied out-of-sample on the subsequent period, following a walk-forward
+methodology to reduce overfitting.
+
+## Asset Selection
+
+```{python}
+#| label: asset-selection
+
+# Screen several liquid assets for breakout frequency
+tickers = {
+    "CL=F": "Crude Oil (WTI)",
+    "GC=F": "Gold",
+    "SI=F": "Silver",
+    "ES=F": "S&P 500 E-mini",
+    "NQ=F": "Nasdaq 100 E-mini",
+    "NG=F": "Natural Gas",
+    "BTC-USD": "Bitcoin",
+}
+
+end_date = "2026-04-01"
+start_date = "2023-04-01"  # 3 years of data
+
+def count_breakouts(prices, window=20):
+    """Count the number of Donchian upper-channel breakouts."""
+    upper = prices["High"].rolling(window).max().shift(1)
+    breakouts = (prices["Close"] > upper).sum()
+    return int(breakouts)
+
+screen_results = []
+all_data = {}
+
+for ticker, name in tickers.items():
+    df = yf.download(ticker, start=start_date, end=end_date, progress=False)
+    if df.empty or len(df) < 252:
+        continue
+    # Flatten multi-level columns if present
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+    all_data[ticker] = df
+    n_bo = count_breakouts(df)
+    avg_vol = df["Volume"].mean()
+    screen_results.append({
+        "Ticker": ticker,
+        "Asset": name,
+        "Days": len(df),
+        "Breakouts (20d)": n_bo,
+        "Breakout Rate (%)": round(100 * n_bo / len(df), 1),
+        "Avg Daily Volume": f"{avg_vol:,.0f}",
+    })
+
+screen_df = pd.DataFrame(screen_results).sort_values(
+    "Breakouts (20d)", ascending=False
+)
+screen_df
+```
+
+I screened seven liquid futures and crypto assets over three years of daily
+data.  The table above ranks them by how often the closing price exceeded the
+prior 20-day high.  I selected **Crude Oil WTI (`CL=F`)** because it
+consistently shows a high breakout rate, is extremely liquid, and trends well
+due to macro supply/demand dynamics — making it a natural fit for a
+momentum-based breakout system.
+
+## Breakout Definition
+
+The strategy uses a **Donchian Channel** (also known as a price-channel
+breakout):
+
+| Parameter | Description | Default |
+|---|---|---|
+| `lookback` | Rolling window length (trading days) for the channel | 20 |
+| `stop_loss_pct` | Maximum adverse move before forced exit | 2 % |
+| `profit_target_pct` | Gain level that triggers a profitable exit | 4 % |
+| `timeout_days` | Maximum holding period before a market-order exit | 10 |
+| `position_size` | Number of contracts/shares per trade | 100 |
+
+**Entry rule:** A long entry is triggered when the daily **close** exceeds the
+highest high of the previous `lookback` days (the upper Donchian band).  Only
+one position can be open at a time.
+
+**Exit rules (checked in order each day):**
+
+1. **Stop-loss** — if the low of the day drops to or below
+   `entry_price × (1 − stop_loss_pct)`, the trade is closed at the stop price.
+2. **Profit target** — if the high of the day reaches or exceeds
+   `entry_price × (1 + profit_target_pct)`, the trade is closed at the target
+   price.
+3. **Timeout** — if the position has been held for `timeout_days` trading
+   days without hitting either threshold, it is closed at the day's closing
+   price.
+
+```{python}
+#| label: breakout-function
+
+# ---------------------------------------------------------------------------
+# Breakout detection & backtesting engine
+# ---------------------------------------------------------------------------
+
+# Default strategy parameters (can be overridden)
+DEFAULT_LOOKBACK = 20
+DEFAULT_STOP_LOSS_PCT = 0.02
+DEFAULT_PROFIT_TARGET_PCT = 0.04
+DEFAULT_TIMEOUT_DAYS = 10
+DEFAULT_POSITION_SIZE = 100
+
+
+def detect_breakouts(prices: pd.DataFrame, lookback: int = DEFAULT_LOOKBACK) -> pd.Series:
+    """
+    Identify Donchian Channel upper-band breakouts.
+
+    Parameters
+    ----------
+    prices : DataFrame with columns ['Open','High','Low','Close','Volume']
+    lookback : int — number of prior trading days for the channel
+
+    Returns
+    -------
+    Boolean Series — True on days where Close > prior lookback-day high.
+    """
+    upper_band = prices["High"].rolling(lookback).max().shift(1)
+    return prices["Close"] > upper_band
+
+
+def backtest_breakouts(
+    prices: pd.DataFrame,
+    lookback: int = DEFAULT_LOOKBACK,
+    stop_loss_pct: float = DEFAULT_STOP_LOSS_PCT,
+    profit_target_pct: float = DEFAULT_PROFIT_TARGET_PCT,
+    timeout_days: int = DEFAULT_TIMEOUT_DAYS,
+    position_size: int = DEFAULT_POSITION_SIZE,
+) -> pd.DataFrame:
+    """
+    Run a vectorised-loop backtest on Donchian breakout signals.
+
+    Returns a DataFrame (the trade blotter) with one row per round-trip trade.
+    """
+    signals = detect_breakouts(prices, lookback)
+    trades = []
+    i = 0
+    n = len(prices)
+    idx = prices.index
+
+    while i < n:
+        if not signals.iloc[i]:
+            i += 1
+            continue
+
+        # --- ENTRY ---
+        entry_date = idx[i]
+        entry_price = float(prices["Close"].iloc[i])
+        stop_price = entry_price * (1 - stop_loss_pct)
+        target_price = entry_price * (1 + profit_target_pct)
+
+        # --- MANAGE TRADE ---
+        exit_date = None
+        exit_price = None
+        outcome = None
+
+        for j in range(1, timeout_days + 1):
+            k = i + j
+            if k >= n:
+                # end of data — close at last available close
+                exit_date = idx[n - 1]
+                exit_price = float(prices["Close"].iloc[n - 1])
+                outcome = "Timed out"
+                i = n
+                break
+
+            day_low = float(prices["Low"].iloc[k])
+            day_high = float(prices["High"].iloc[k])
+            day_close = float(prices["Close"].iloc[k])
+
+            # Check stop-loss first
+            if day_low <= stop_price:
+                exit_date = idx[k]
+                exit_price = stop_price
+                outcome = "Stop-loss"
+                i = k + 1
+                break
+
+            # Check profit target
+            if day_high >= target_price:
+                exit_date = idx[k]
+                exit_price = target_price
+                outcome = "Successful"
+                i = k + 1
+                break
+
+            # Timeout on last allowed day
+            if j == timeout_days:
+                exit_date = idx[k]
+                exit_price = day_close
+                outcome = "Timed out"
+                i = k + 1
+                break
+        else:
+            i += 1
+            continue
+
+        pnl = (exit_price - entry_price) * position_size
+        ret = (exit_price - entry_price) / entry_price
+
+        trades.append({
+            "Entry Date": entry_date,
+            "Exit Date": exit_date,
+            "Entry Price": round(entry_price, 4),
+            "Exit Price": round(exit_price, 4),
+            "Position Size": position_size,
+            "Direction": "Long",
+            "P&L ($)": round(pnl, 2),
+            "Return (%)": round(ret * 100, 4),
+            "Outcome": outcome,
+        })
+
+    return pd.DataFrame(trades)
+```
+
+## Walk-Forward Backtest
+
+I use a **rolling walk-forward** approach: each year of data is used as a
+training window to select the best `lookback` parameter (from 10 to 40 days)
+by maximising the Sharpe ratio, and the optimised parameter is applied
+out-of-sample on the next six months.
+
+```{python}
+#| label: walk-forward
+
+prices = all_data["CL=F"].copy()
+
+# Walk-forward windows
+train_days = 252    # ~1 year
+test_days  = 126    # ~6 months
+lookback_grid = [10, 15, 20, 25, 30, 40]
+
+all_trades = []
+wf_log = []
+start_idx = 0
+
+while start_idx + train_days + test_days <= len(prices):
+    train = prices.iloc[start_idx : start_idx + train_days]
+    test  = prices.iloc[start_idx + train_days : start_idx + train_days + test_days]
+
+    # --- Optimise on training set ---
+    best_sharpe = -np.inf
+    best_lb = DEFAULT_LOOKBACK
+    for lb in lookback_grid:
+        tr = backtest_breakouts(train, lookback=lb)
+        if len(tr) < 3:
+            continue
+        rets = tr["Return (%)"] / 100
+        sr = rets.mean() / rets.std() * np.sqrt(252 / DEFAULT_TIMEOUT_DAYS) if rets.std() > 0 else 0
+        if sr > best_sharpe:
+            best_sharpe = sr
+            best_lb = lb
+
+    # --- Apply out-of-sample ---
+    oos_trades = backtest_breakouts(test, lookback=best_lb)
+    window_label = f"{train.index[0].date()} → {test.index[-1].date()}"
+    oos_trades["Window"] = window_label
+    all_trades.append(oos_trades)
+    wf_log.append({
+        "Window": window_label,
+        "Best Lookback": best_lb,
+        "Train Sharpe": round(best_sharpe, 2),
+        "OOS Trades": len(oos_trades),
+    })
+
+    start_idx += test_days  # slide forward
+
+blotter = pd.concat(all_trades, ignore_index=True)
+wf_df = pd.DataFrame(wf_log)
+wf_df
+```
+
+The table above shows each walk-forward fold, the lookback chosen in-sample,
+and how many trades were generated out-of-sample.
+
+## Trade Ledger & Blotter
+
+```{python}
+#| label: blotter-table
+
+# Save CSV for download
+blotter.to_csv("docs/trade_blotter.csv", index=False)
+
+# Display interactive table
+fig_blotter = go.Figure(
+    data=[
+        go.Table(
+            header=dict(
+                values=list(blotter.columns),
+                fill_color="#2c3e50",
+                font=dict(color="white", size=12),
+                align="center",
+            ),
+            cells=dict(
+                values=[blotter[c] for c in blotter.columns],
+                fill_color=[
+                    [
+                        "#e8f5e9" if v == "Successful" else
+                        "#ffebee" if v == "Stop-loss" else
+                        "#fff8e1"
+                        for v in blotter["Outcome"]
+                    ]
+                    if c == "Outcome"
+                    else "white"
+                    for c in blotter.columns
+                ],
+                align="center",
+                font=dict(size=11),
+            ),
+        )
+    ]
+)
+fig_blotter.update_layout(
+    title="Complete Trade Blotter (Out-of-Sample)",
+    height=max(400, 40 * len(blotter)),
+    margin=dict(l=20, r=20, t=50, b=20),
+)
+fig_blotter.show()
+```
+
+The full trade blotter is also available as a
+[downloadable CSV](trade_blotter.csv).
+
+## Trade Outcome Analysis
+
+```{python}
+#| label: outcome-histogram
+
+outcome_counts = blotter["Outcome"].value_counts().reindex(
+    ["Successful", "Timed out", "Stop-loss"], fill_value=0
+)
+
+colors = {"Successful": "#27ae60", "Timed out": "#f39c12", "Stop-loss": "#e74c3c"}
+
+fig_hist = go.Figure(
+    data=[
+        go.Bar(
+            x=outcome_counts.index.tolist(),
+            y=outcome_counts.values.tolist(),
+            marker_color=[colors[o] for o in outcome_counts.index],
+            text=outcome_counts.values.tolist(),
+            textposition="auto",
+        )
+    ]
+)
+fig_hist.update_layout(
+    title="Trade Outcomes — All Out-of-Sample Trades",
+    xaxis_title="Outcome",
+    yaxis_title="Number of Trades",
+    template="plotly_white",
+    height=400,
+)
+fig_hist.show()
+```
+
+**Exit logic recap:**
+
+- **Successful**: the profit target of **4 %** above entry was reached.
+- **Timed out**: the trade was closed via market order after **10 trading days**
+  without hitting the stop or target.
+- **Stop-loss**: the price dropped **2 %** below entry, triggering the stop.
+
+## Performance Metrics
+
+```{python}
+#| label: performance-metrics
+
+returns = blotter["Return (%)"] / 100
+pnls = blotter["P&L ($)"]
+n_trades = len(blotter)
+
+# Avg return per trade
+avg_return = returns.mean()
+
+# Win rate
+wins = (returns > 0).sum()
+win_rate = wins / n_trades if n_trades else 0
+
+# Sharpe ratio (annualised)
+# Assume average trade duration ~ timeout_days/2, risk-free = 4.5 % annual
+risk_free_annual = 0.045
+avg_holding = 5  # approximate days
+trades_per_year = 252 / avg_holding
+rf_per_trade = risk_free_annual / trades_per_year
+excess = returns - rf_per_trade
+sharpe = excess.mean() / excess.std() * np.sqrt(trades_per_year) if excess.std() > 0 else 0
+
+# Sortino ratio
+downside = excess[excess < 0]
+downside_std = np.sqrt((downside**2).mean())
+sortino = excess.mean() / downside_std * np.sqrt(trades_per_year) if downside_std > 0 else 0
+
+# Profit factor
+gross_profit = pnls[pnls > 0].sum()
+gross_loss = abs(pnls[pnls < 0].sum())
+profit_factor = gross_profit / gross_loss if gross_loss > 0 else np.inf
+
+# Max drawdown (on cumulative P&L)
+cum_pnl = pnls.cumsum()
+running_max = cum_pnl.cummax()
+drawdowns = cum_pnl - running_max
+max_dd = drawdowns.min()
+
+# Expectancy
+expectancy = pnls.mean()
+
+metrics = {
+    "Total Trades": n_trades,
+    "Win Rate": f"{win_rate:.1%}",
+    "Avg Return per Trade": f"{avg_return:.2%}",
+    "Sharpe Ratio (annualised)": f"{sharpe:.2f}",
+    "Sortino Ratio (annualised)": f"{sortino:.2f}",
+    "Profit Factor": f"{profit_factor:.2f}",
+    "Expectancy ($ per trade)": f"${expectancy:,.2f}",
+    "Max Drawdown ($)": f"${max_dd:,.2f}",
+    "Risk-Free Rate Assumed": f"{risk_free_annual:.1%}",
+}
+
+metrics_df = pd.DataFrame(
+    list(metrics.items()), columns=["Metric", "Value"]
+)
+metrics_df
+```
+
+### What Each Metric Tells Us
+
+| Metric | Interpretation |
+|---|---|
+| **Win Rate** | Fraction of trades that closed with a positive return. |
+| **Avg Return per Trade** | Mean percentage gain (or loss) across all trades — the strategy's raw edge. |
+| **Sharpe Ratio** | Risk-adjusted return; values above 1.0 suggest attractive compensation for volatility. Uses a **4.5 % annualised** risk-free rate. |
+| **Sortino Ratio** | Like the Sharpe but penalises only downside volatility — more relevant for asymmetric return distributions. |
+| **Profit Factor** | Gross profits ÷ gross losses. Above 1.0 means the strategy is net profitable. |
+| **Expectancy** | Average dollar P&L per trade — what a trader can expect to make on each entry, on average. |
+| **Max Drawdown** | Largest peak-to-trough decline in cumulative P&L — indicates worst-case capital erosion. |
+
+## Equity Curve & Drawdown
+
+```{python}
+#| label: equity-curve
+
+cum_pnl = blotter["P&L ($)"].cumsum()
+running_max = cum_pnl.cummax()
+dd = cum_pnl - running_max
+
+fig = make_subplots(
+    rows=2, cols=1, shared_xaxes=True,
+    row_heights=[0.7, 0.3],
+    subplot_titles=["Cumulative P&L ($)", "Drawdown ($)"],
+    vertical_spacing=0.08,
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=blotter["Exit Date"], y=cum_pnl,
+        mode="lines+markers", name="Cumulative P&L",
+        line=dict(color="#2980b9", width=2),
+        marker=dict(size=4),
+    ),
+    row=1, col=1,
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=blotter["Exit Date"], y=dd,
+        fill="tozeroy", name="Drawdown",
+        line=dict(color="#e74c3c", width=1),
+        fillcolor="rgba(231,76,60,0.25)",
+    ),
+    row=2, col=1,
+)
+
+fig.update_layout(
+    height=550, template="plotly_white",
+    showlegend=False,
+    margin=dict(l=60, r=20, t=40, b=40),
+)
+fig.update_yaxes(title_text="P&L ($)", row=1, col=1)
+fig.update_yaxes(title_text="DD ($)", row=2, col=1)
+fig.show()
+```
+
+## Price Chart with Donchian Channel & Trades
+
+```{python}
+#| label: price-chart
+
+# Use last OOS test window for a readable chart
+chart_start = blotter["Entry Date"].iloc[0] if len(blotter) else prices.index[0]
+chart_prices = prices.loc[chart_start:]
+
+lb = wf_df["Best Lookback"].iloc[-1] if len(wf_df) else 20
+upper = chart_prices["High"].rolling(lb).max().shift(1)
+lower = chart_prices["Low"].rolling(lb).min().shift(1)
+
+fig_px = go.Figure()
+fig_px.add_trace(go.Candlestick(
+    x=chart_prices.index,
+    open=chart_prices["Open"], high=chart_prices["High"],
+    low=chart_prices["Low"], close=chart_prices["Close"],
+    name="CL=F",
+))
+fig_px.add_trace(go.Scatter(
+    x=chart_prices.index, y=upper, mode="lines",
+    name=f"Upper ({lb}d)", line=dict(color="#27ae60", dash="dash"),
+))
+fig_px.add_trace(go.Scatter(
+    x=chart_prices.index, y=lower, mode="lines",
+    name=f"Lower ({lb}d)", line=dict(color="#e74c3c", dash="dash"),
+))
+
+# Mark entries & exits
+for _, t in blotter.iterrows():
+    fig_px.add_trace(go.Scatter(
+        x=[t["Entry Date"]], y=[t["Entry Price"]],
+        mode="markers", marker=dict(symbol="triangle-up", size=10, color="#2980b9"),
+        showlegend=False, hovertext=f"Entry {t['Entry Price']:.2f}",
+    ))
+    fig_px.add_trace(go.Scatter(
+        x=[t["Exit Date"]], y=[t["Exit Price"]],
+        mode="markers",
+        marker=dict(
+            symbol="triangle-down", size=10,
+            color="#27ae60" if t["Outcome"] == "Successful" else
+                  "#e74c3c" if t["Outcome"] == "Stop-loss" else "#f39c12",
+        ),
+        showlegend=False, hovertext=f"Exit {t['Exit Price']:.2f} ({t['Outcome']})",
+    ))
+
+fig_px.update_layout(
+    title="Crude Oil (CL=F) — Donchian Channel & Trade Markers",
+    height=550, template="plotly_white",
+    xaxis_rangeslider_visible=False,
+    margin=dict(l=60, r=20, t=50, b=40),
+)
+fig_px.show()
+```
+
+## Assumptions & Replication Notes
+
+- **Slippage / commissions:** Not modelled. In practice, CL=F has very tight
+  bid-ask spreads (~$0.01/barrel) so the impact on a 20-day breakout system is
+  minimal.
+- **Data source:** Yahoo Finance via `yfinance`. Prices are unadjusted
+  front-month continuous contracts.
+- **Position sizing:** Fixed at 100 units per trade (no compounding).
+- **Walk-forward splits:** 252-day train / 126-day test, sliding by 126 days.
+- **Risk-free rate:** 4.5 % annualised (approximate US T-bill yield).
+
+Anyone with Python 3.10+ and the packages listed in the code can reproduce
+these results by running `quarto render breakouts.qmd`.

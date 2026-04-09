@@ -1,60 +1,10 @@
 ---
-title: "Yang Puhan"
+title: "Puhan Yang"
 subtitle: "Fintech 533 — course site and notes"
 ---
 
 ::: {.hero-lead}
-Hi — I’m **Yang Puhan**. This is my Quarto site for **Fintech 533**: assignments, write-ups, and links to my GitHub repo below.
+Hi — I'm **Puhan Yang**. This is my Quarto site for **Fintech 533**.
 :::
 
-![Site banner with initials YP](images/banner.svg){fig-alt="Banner graphic with initials Y P and Fintech 533" fig-align="center" width="560"}
-
-## What you get
-
-::: {.row .g-4 .my-4}
-
-::: {.col-md-4}
-::: {.feature-card}
-### Projects
-
-Render the whole folder with one command. Shared YAML keeps titles, theme, and output in sync.
-:::
-:::
-
-::: {.col-md-4}
-::: {.feature-card}
-### Authoring
-
-Write in Markdown (`.qmd`) or Jupyter (`.ipynb`). Quarto turns them into HTML, PDF, and more.
-:::
-:::
-
-::: {.col-md-4}
-::: {.feature-card}
-### Polished HTML
-
-Bootstrap-based layout, table of contents, and search — suitable for assignments and portfolios.
-:::
-:::
-
-:::
-
-## Quick start
-
-::: {.section-muted}
-From this project folder, update the site and publish:
-
-```bash
-quarto render
-git add .
-git commit -m "Update site"
-git push
-```
-
-GitHub Pages serves the **`docs/`** folder on branch **`main`**.
-:::
-
-::: {.callout-tip}
-## Tip
-Replace the banner in `images/banner.svg` with your own photo: save it as e.g. `images/photo.jpg` and update the image line above to `![](images/photo.jpg)`.
-:::
+![](images/banner.jpg){fig-align="center" width="560"}
